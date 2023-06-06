@@ -25,5 +25,5 @@ plt.show()
 image = np.random.rand(10, 10)  # Random 10x10 image
 plt.imshow(image, cmap='gray')
 plt.axis('off')
-plt.title('Random Image')
+plt.title('Simple Image')
 plt.show()
