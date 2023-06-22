@@ -1,39 +1,24 @@
 import numpy as np
 
-def relu (x): return np.maximum(0, x)
+def relu (x, derivative = False):
+    if derivative: return np.where (x <= 0, 0, 1)
+    else: return np.maximum(0, x)
 
-def softmax (x): 
-    e_x = np.exp(x - np.max(x))
-    return e_x / np.sum(e_x)
+def softmax(x):
+    e_x = np.exp (x - np.max(x))
+    return e_x / e_x.sum()
 
-def neural_network (x, weights):
-    hidden_layer1 = relu (np.dot (x, weights['W1']) + weights['b1'])
-    hidden_layer2 = relu (np.dot (hidden_layer1, weights['W2']) + weights['b2'])
-    output_layer = softmax (np.dot (hidden_layer2, weights['W3']) + weights['b3'])
-    return output_layer
+def cross_entropy_loss (predictions, targets):
+    return -np.sum(targets * np.log(predictions + 1e-7)) / targets.shape[0]
 
-num_points = 100
-test_data = np.random.rand (num_points, 2)
-
-input_num = 2 # x, y
-hidden1_num = 6 # 6 neurons
-hidden2_num = 4 # 4 neurons
-output_num = 2 # far/close
-
-weights = {
-    'W1': np.random.randn (input_num, hidden1_num),
-    'b1': np.zeros (hidden1_num),
-    'W2': np.random.randn (hidden1_num, hidden2_num),
-    'b2': np.zeros (hidden2_num),
-    'W3': np.random.randn (hidden2_num, output_num),
-    'b3': np.zeros (output_num)
-}
-
-predictions = neural_network (test_data, weights)
-
-for i in range(num_points):
-    point = test_data[i]
-    prediction = predictions[i]
-    if prediction[0] > prediction[1]: category = "far from middle"
-    else: category = "close to middle"
-    print(f"{point}: {category}")
+def backward_propagation(x, targets, predictions, weights, biases):
+    num_layers = len(weights)
+    gradients = {}
+    output_gradient = predictions - targets
+    for layer in reversed(range(1, num_layers + 1)):
+        gradient = output_gradient * relu (x[layer], derivative=True)
+        gradients[f"dW{layer}"] = np.dot (x[layer-1].T, gradient)
+        gradients[f"db{layer}"] = np.sum (gradient, axis=0)
+        if layer > 1: # not input layer
+            output_gradient = np.dot(gradient, weights[layer].T)
+    return gradients
