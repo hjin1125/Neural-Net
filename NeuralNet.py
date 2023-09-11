@@ -1,24 +1,48 @@
-import numpy as np
+import os
+import cv2
+import numpy as np 
+import matplotlib.pyplot as plt
+import tensorflow as tf
 
-def relu (x, derivative = False):
-    if derivative: return np.where (x <= 0, 0, 1)
-    else: return np.maximum(0, x)
+mnist = tf.keras.datasets.mnist
+(x_train, y_train), (x_test, y_test) = mnist.load_data() #x = image, y = classification
 
-def softmax(x):
-    e_x = np.exp (x - np.max(x))
-    return e_x / e_x.sum()
+x_train = tf.keras.utils.normalize(x_train, axis = 1)
+x_test = tf.keras.utils.normalize(x_test, axis = 1)
 
-def cross_entropy_loss (predictions, targets):
-    return -np.sum(targets * np.log(predictions + 1e-7)) / targets.shape[0]
+"""
+model = tf.keras.models.Sequential()
+model.add (tf.keras.layers.Flatten(input_shape = (28, 28)))
+model.add (tf.keras.layers.Dense(128, activation = 'relu'))
+model.add (tf.keras.layers.Dense(128, activation = 'relu'))
+model.add (tf.keras.layers.Dense(10, activation = 'softmax'))
 
-def backward_propagation(x, targets, predictions, weights, biases):
-    num_layers = len(weights)
-    gradients = {}
-    output_gradient = predictions - targets
-    for layer in reversed(range(1, num_layers + 1)):
-        gradient = output_gradient * relu (x[layer], derivative=True)
-        gradients[f"dW{layer}"] = np.dot (x[layer-1].T, gradient)
-        gradients[f"db{layer}"] = np.sum (gradient, axis=0)
-        if layer > 1: # not input layer
-            output_gradient = np.dot(gradient, weights[layer].T)
-    return gradients
+model.compile (optimizer = 'adam', loss = 'sparse_categorical_crossentropy', metrics = ['accuracy'])
+
+model.fit(x_train, y_train, epochs = 3)
+
+model.save('handwritten.model')
+"""
+
+model = tf.keras.models.load_model ('handwritten.model')
+
+"""
+loss, accuracy = model.evaluate (x_test, y_test)
+
+print (loss)
+print (accuracy)
+"""
+
+image_number = 1
+while os.path.isfile(f"Digits/test{image_number}.png"):
+    try:
+        img = cv2.imread(f"Digits/test{image_number}.png")[:, :, 0]
+        img = np.invert(np.array([img]))
+        prediction = model.predict(img)
+        print(f"This digit is probably a {np.argmax(prediction)}")
+        plt.imshow(img[0], cmap = plt.cm.binary)
+        plt.show()
+    except:
+        print ("Error")
+    finally:
+        image_number += 1
